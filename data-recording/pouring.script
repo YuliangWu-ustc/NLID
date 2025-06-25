@@ -1,0 +1,1070 @@
+def pouring():
+  global _hidden_verificationVariable=0
+  set_safety_mode_transition_hardness(1)
+  set_target_payload(1.320000, [0.001000, -0.002000, 0.054000], [0.002445, 0.002445, 0.002445, 0.000000, 0.000000, 0.000000])
+  set_tool_communication(True, 115200, 0, 1, 1.5, 3.5)
+  set_tool_output_mode(0)
+  set_tool_digital_output_mode(0, 1)
+  set_tool_digital_output_mode(1, 1)
+  set_tool_voltage(24)
+  set_tcp(p[0.0,0.0,0.15,0.0,0.0,0.0])
+  set_gravity([0.0, 0.0, 9.82])
+  set_standard_analog_input_domain(0, 1)
+  set_standard_analog_input_domain(1, 1)
+  set_tool_analog_input_domain(0, 1)
+  set_tool_analog_input_domain(1, 1)
+  set_analog_outputdomain(0, 0)
+  set_analog_outputdomain(1, 0)
+  set_input_actions_to_default()
+  # begin: URCap Installation Node
+  #   Source: DH-PGI, 2.4.11, DH-Robotics
+  #   Type: 大寰-PGI
+  #################################################
+  # Head - Connect server
+  #################################################
+  global dh_pgi_global_lock = False
+  global dh_pgi_connected_to_server = "False"
+  dh_pgi_operate = False
+  if ("False" == dh_pgi_connected_to_server):
+    dh_pgi_operate = socket_open("127.0.0.1", 9002, "dh_pgi_")
+    if (True ==dh_pgi_operate):
+      dh_pgi_connected_to_server = "True"
+    end
+  end
+  def dh_pgi_is_connected_to_server():
+    return dh_pgi_connected_to_server
+  end
+  def dh_pgi_lock():
+    enter_critical
+    while (True):
+      if (dh_pgi_global_lock == False):
+        dh_pgi_global_lock = True
+        break
+      end
+      sleep(0.1)
+    end
+    exit_critical
+  end
+  def dh_pgi_unlock():
+    enter_critical
+    while (True):
+      if (dh_pgi_global_lock == True):
+        dh_pgi_global_lock = False
+        break
+      end
+      sleep(0.1)
+    end
+    exit_critical
+  end
+  
+  
+  def dh_pgi_scan():
+    local ret = False
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String scan()", "dh_pgi_")
+    while (False == operate):
+      popup("523:exportScanFunction","socket_send_line", blocking = True)
+    end
+    local response = "False"
+    response = socket_read_line("dh_pgi_")
+    dh_pgi_unlock()
+    ret = "True"== response
+    return ret
+  end
+  
+  
+  def dh_pgi_get_scan_status():
+    local ret = False
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String getScanStatus()", "dh_pgi_")
+    while (False == operate):
+      popup("581:exportGetScanStatusFunction","socket_send_line", blocking = True)
+    end
+    local response = "False"
+    response = socket_read_line("dh_pgi_")
+    dh_pgi_unlock()
+    ret = "True"== response
+    return ret
+  end
+  
+  
+  def dh_pgi_is_scanned():
+    local response = False
+    response = dh_pgi_get_scan_status()
+    local ret = False
+    if (True == response):
+      ret = True
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_get_communication_device(connect_mode):
+    local ret = False
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String getCommunicationDevice(String connectMode)", "dh_pgi_")
+    operate = operate and socket_send_line(connect_mode, "dh_pgi_")
+    while (False == operate):
+      popup("621:exportGetCommunicationDeviceFunction","socket_send_line", blocking = True)
+    end
+    local response = "False"
+    response = socket_read_line("dh_pgi_")
+    dh_pgi_unlock()
+    ret = "True"== response
+    return ret
+  end
+  
+  
+  def dh_pgi_relate_device(installation_index, connect_mode, device_id):
+    local ret = False
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String relateDevice(int installationIndex, String connectMode, int deviceId)", "dh_pgi_")
+    operate = operate and socket_send_line(installation_index, "dh_pgi_")
+    operate = operate and socket_send_line(connect_mode, "dh_pgi_")
+    operate = operate and socket_send_line(device_id, "dh_pgi_")
+    while (False == operate):
+      popup("665:exportRelateFunction","socket_send_line", blocking = True)
+    end
+    local response = "False"
+    response = socket_read_line("dh_pgi_")
+    dh_pgi_unlock()
+    ret = "True"== response
+    return ret
+  end
+  
+  
+  def dh_pgi_connect(installation_index):
+    local ret = False
+    while (True):
+      local operate = True
+      dh_pgi_lock()
+      operate = operate and socket_send_line("String connect(int installationIndex)", "dh_pgi_")
+      operate = operate and socket_send_line(installation_index, "dh_pgi_")
+      while (False == operate):
+        popup("747:exportConnectFunction","socket_send_line", blocking = True)
+      end
+      local response = "SUCCEEDED"
+      response = socket_read_line("dh_pgi_")
+      dh_pgi_unlock()
+      ret = "SUCCEEDED"== response
+      if (True == ret):
+        break
+      end
+      if ("PARAMETERS_FAILED" == response):
+        while (True):
+          popup("Please check installation configuration","Tip", blocking = True)
+        end
+      end
+      break
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_disconnect(installation_index):
+    local ret = False
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String disconnect(int installationIndex)", "dh_pgi_")
+    operate = operate and socket_send_line(installation_index, "dh_pgi_")
+    while (False == operate):
+      popup("798:exportDisconnectFunction","socket_send_line", blocking = True)
+    end
+    local response = "False"
+    response = socket_read_line("dh_pgi_")
+    dh_pgi_unlock()
+    ret = "True"== response
+    return ret
+  end
+  
+  
+  def dh_pgi_get_communication_status(installation_index):
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String getCommunicationStatus(int installationIndex)", "dh_pgi_")
+    operate = operate and socket_send_line(installation_index, "dh_pgi_")
+    while (False == operate):
+      popup("705:exportGetCommunicationStatusFunction","socket_send_line", blocking = True)
+    end
+    local response = "UNDEFINE"
+    response = socket_read_line("dh_pgi_")
+    dh_pgi_unlock()
+    return response
+  end
+  
+  
+  def dh_pgi_is_connected(installation_index):
+    local response = "UNDEFINE"
+    response = dh_pgi_get_communication_status(installation_index)
+    local ret = False
+    if ("CONNECTED" == response):
+      ret = True
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_is_occur_exception(installation_index):
+    local response = "UNDEFINE"
+    response = dh_pgi_get_communication_status(installation_index)
+    local ret = False
+    if ("SYNC_EXCEPTION" == response):
+      ret = True
+    end
+    if ("ALIVE_EXCEPTION" == response):
+      ret = True
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_get_gripper_status(installation_index):
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String getGripperStatus(int installationIndex)", "dh_pgi_")
+    operate = operate and socket_send_line(installation_index, "dh_pgi_")
+    while (False == operate):
+      popup("857:exportGetGripperStatusFunction","socket_send_line", blocking = True)
+    end
+    local response = "UNDEFINE"
+    response = socket_read_line("dh_pgi_")
+    dh_pgi_unlock()
+    return response
+  end
+  
+  
+  def dh_pgi_is_gripped(installation_index):
+    local response = "UNDEFINE"
+    response = dh_pgi_get_gripper_status(installation_index)
+    local ret = False
+    if ("DETECTED" == response):
+      ret = True
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_is_dropped(installation_index):
+    local response = "UNDEFINE"
+    response = dh_pgi_get_gripper_status(installation_index)
+    local ret = False
+    if ("DROPPED" == response):
+      ret = True
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_is_activated(installation_index):
+    local response = "UNDEFINE"
+    response = dh_pgi_get_gripper_status(installation_index)
+    local ret = True
+    if ("UNDEFINE" == response):
+      ret = False
+    end
+    if ("INACTIVATE" == response):
+      ret = False
+    end
+    if ("ACTIVATING" == response):
+      ret = False
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_set_activate(installation_index):
+    local ret = False
+    while (True):
+      if (dh_pgi_is_occur_exception(installation_index)):
+        break
+      end
+      local operate = True
+      dh_pgi_lock()
+      operate = operate and socket_send_line("String setActivate(int installationIndex)", "dh_pgi_")
+      operate = operate and socket_send_line(installation_index, "dh_pgi_")
+      while (False == operate):
+        popup("987:exportSetActivateFunction","socket_send_line", blocking = True)
+      end
+      local response = "False"
+      response = socket_read_line("dh_pgi_")
+      dh_pgi_unlock()
+      ret = "True"== response
+      if (True == ret):
+        break
+      end
+      sleep(0.5)
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_set_activate_and_wait_complete(installation_index):
+    local ret = False
+    local operate = dh_pgi_set_activate(installation_index)
+    ret = operate and dh_pgi_wait_until_activated(installation_index)
+  return ret
+  end
+  
+  
+  def dh_pgi_set_position(installation_index, position):
+    local ret = False
+    while (True):
+      if (dh_pgi_is_occur_exception(installation_index)):
+        break
+      end
+      local operate = True
+      dh_pgi_lock()
+      operate = operate and socket_send_line("String setPosition(int installationIndex, float position)", "dh_pgi_")
+      operate = operate and socket_send_line(installation_index, "dh_pgi_")
+      operate = operate and socket_send_line(position, "dh_pgi_")
+      while (False == operate):
+        popup("1122:exportSetPositionFunction","", blocking = True)
+      end
+      local response = "UNDEFINE"
+      response = socket_read_line("dh_pgi_")
+      dh_pgi_unlock()
+      ret = "True"== response
+      if (True == ret):
+        break
+      end
+      sleep(0.1)
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_set_position_and_wait_complete(installation_index, position):
+    local ret = False
+    local operate = dh_pgi_set_position(installation_index, position)
+    ret = operate and dh_pgi_wait_until_gripped_or_arrived(installation_index)
+  return ret
+  end
+  
+  
+  def dh_pgi_get_position(installation_index):
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String getPosition(int installationIndex)", "dh_pgi_")
+    operate = operate and socket_send_line(installation_index, "dh_pgi_")
+      while (False == operate):
+        popup("1166:exportGetPositionFunction","socket_send_line", blocking = True)
+      end
+    local response = 0.0
+    local floats = socket_read_ascii_float(1, "dh_pgi_")
+    response = floats[1]
+    dh_pgi_unlock()
+    return response
+  end
+  
+  
+  def dh_pgi_set_force(installation_index, force):
+    local ret = False
+    while (True):
+      if (dh_pgi_is_occur_exception(installation_index)):
+        break
+      end
+      local operate = True
+      dh_pgi_lock()
+      operate = operate and socket_send_line("String setForce(int installationIndex, int force)", "dh_pgi_")
+      operate = operate and socket_send_line(installation_index, "dh_pgi_")
+      operate = operate and socket_send_line(force, "dh_pgi_")
+      while (False == operate):
+        popup("1212:exportSetForceFunction","socket_send_line", blocking = True)
+      end
+      local response = "UNDEFINE"
+      response = socket_read_line("dh_pgi_")
+      dh_pgi_unlock()
+      ret = "True"== response
+      if (True == ret):
+        break
+      end
+      sleep(0.5)
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_get_force(installation_index):
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String getForce(int installationIndex)", "dh_pgi_")
+    operate = operate and socket_send_line(installation_index, "dh_pgi_")
+    while (False == operate):
+      popup("1256:exportGetForceFunction","socket_send_line", blocking = True)
+    end
+    local response = 0
+    local integers = socket_read_ascii_float(1, "dh_pgi_")
+    response = integers[1]
+    dh_pgi_unlock()
+    return response
+  end
+  
+  
+  def dh_pgi_set_speed(installation_index, speed):
+    local ret = False
+    while (True):
+      if (dh_pgi_is_occur_exception(installation_index)):
+        break
+      end
+      local operate = True
+      dh_pgi_lock()
+      operate = operate and socket_send_line("String setSpeed(int installationIndex, int speed)", "dh_pgi_")
+      operate = operate and socket_send_line(installation_index, "dh_pgi_")
+      operate = operate and socket_send_line(speed, "dh_pgi_")
+      while (False == operate):
+        popup("1314:exportSetSpeedFunction","socket_send_line", blocking = True)
+      end
+      local response = "UNDEFINE"
+      response = socket_read_line("dh_pgi_")
+      dh_pgi_unlock()
+      ret = "True"== response
+      if (True == ret):
+        break
+      end
+      sleep(0.5)
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_get_speed(installation_index):
+    local operate = True
+    dh_pgi_lock()
+    operate = operate and socket_send_line("String getSpeed(int installationIndex)", "dh_pgi_")
+    operate = operate and socket_send_line(installation_index, "dh_pgi_")
+      while (False == operate):
+        popup("1370:exportGetSpeedFunction","socket_send_line", blocking = True)
+      end
+    local response = 0
+    local integers = socket_read_ascii_float(1, "dh_pgi_")
+    response = integers[1]
+    dh_pgi_unlock()
+    return response
+  end
+  
+  
+  def dh_pgi_wait_until_idle(installation_index):
+    local response = "UNDEFINE"
+    local ret = False
+    while (True):
+      response = dh_pgi_get_gripper_status(installation_index)
+      if ("" == response):
+        while (True):
+          popup("1917:exportWaitUntilIdle","Exception", blocking = True)
+        end
+      end
+      if ("UNDEFINE" == response):
+        while (True):
+          popup("1934:exportWaitUntilIdle","Exception", blocking = True)
+        end
+      end
+      if ("ACTIVATING" == response):
+        continue
+      end
+      if ("MOVING" == response):
+        continue
+      end
+      ret = True
+      break
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_wait_until_activated(installation_index):
+    local response = "UNDEFINE"
+    local ret = False
+    while (True):
+      response = dh_pgi_get_gripper_status(installation_index)
+      if ("" == response):
+        while (True):
+          popup("1981:exportWaitUntilActivatedFunction","Exception", blocking = True)
+        end
+      end
+      if ("UNDEFINE" == response):
+        while (True):
+          popup("1998:exportWaitUntilActivatedFunction","Exception", blocking = True)
+        end
+      end
+      if ("ACTIVATED" == response):
+        ret = True
+        break
+      end
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_wait_until_gripped(installation_index):
+    local response = "UNDEFINE"
+    local ret = False
+    while (True):
+      response = dh_pgi_get_gripper_status(installation_index)
+      if ("" == response):
+        while (True):
+          popup("2040:exportWaitUntilGrippedFunction","Exception", blocking = True)
+        end
+      end
+      if ("UNDEFINE" == response):
+        while (True):
+          popup("2057:exportWaitUntilGrippedFunction","Exception", blocking = True)
+        end
+      end
+      if ("DETECTED" == response):
+        ret = True
+        break
+      end
+    end
+    return ret
+  end
+  
+  
+  def dh_pgi_wait_until_gripped_or_arrived(installation_index):
+    local response = "UNDEFINE"
+    local ret = False
+    while (True):
+      response = dh_pgi_get_gripper_status(installation_index)
+      if ("" == response):
+        while (True):
+          popup("2100:exportWaitUntilGrippedOrArrivedFunction","Exception", blocking = True)
+        end
+      end
+      if ("UNDEFINE" == response):
+        while (True):
+          popup("2117:exportWaitUntilGrippedOrArrivedFunction","Exception", blocking = True)
+        end
+      end
+      if ("ARRIVED" == response):
+        ret = True
+        break
+      end
+      if ("DETECTED" == response):
+        ret = True
+        break
+      end
+      if ("DROPPED" == response):
+        ret = True
+        break
+      end
+    end
+    return ret
+  end
+  
+  # end: URCap Installation Node
+  # begin: URCap Installation Node
+  #   Source: External Control, 1.0.5, FZI Research Center for Information Technology
+  #   Type: External Control
+  # end: URCap Installation Node
+  step_count_55defa92_9565_4c30_9e1b_4d0c4665587d = 0.0
+  thread Step_Counter_Thread_4611bf97_50f7_4632_a9bc_ebbb3e7b944c():
+    while (True):
+      step_count_55defa92_9565_4c30_9e1b_4d0c4665587d = step_count_55defa92_9565_4c30_9e1b_4d0c4665587d + 1.0
+      sync()
+    end
+  end
+  run Step_Counter_Thread_4611bf97_50f7_4632_a9bc_ebbb3e7b944c()
+  global init_p1frontup_p=p[-.442649006108, -.333782411664, .154056399462, -.752035208829, -1.740902404715, 1.744372671403]
+  global init_p1frontup_q=[4.146020889282227, -1.7210079632201136, -2.418778896331787, -2.141914030114645, -1.3218329588519495, 3.145305633544922]
+  global p1front_p=p[-.442663680922, -.333783891573, .064227934448, -.752042543638, -1.740836400504, 1.744407098159]
+  global p1front_q=[4.145769119262695, -2.0218736133971156, -2.4568474292755127, -1.802697320977682, -1.3219602743731897, 3.1443710327148438]
+  global p1_p=p[-.507984558700, -.399121278451, .054220000000, -.752046523656, -1.740856204912, 1.744416513259]
+  global p1_q=[4.092291912795838, -2.1471164354758754, -2.1939052442363014, -1.9405095702242363, -1.3759264203853974, 3.145029602595014]
+  global p1up_p=p[-.507985793607, -.399126108200, .253488191871, -.752027328289, -1.740876584748, 1.744383806751]
+  global p1up_q=[4.0925493240356445, -1.7060791454710902, -2.0663323402404785, -2.509361883203024, -1.376357380543844, 3.146167755126953]
+  global p0up_p=p[-.262948822772, -.629596045734, .253495549699, -.752011721433, -1.740903195692, 1.744416471894]
+  global p0up_q=[4.827929496765137, -1.8540841541686, -1.8776984214782715, -2.5513669453062953, -0.641449276600973, 3.145659923553467]
+  global p0_p=p[-.251995094642, -.639910417275, .123820000000, -.752046814157, -1.740891317475, 1.744402540981]
+  global p0_q=[4.849124978258295, -2.0906829064427077, -1.9562869547252424, -2.235585381087299, -0.6197053507717545, 3.144878656637669]
+  global p0front_p=p[-.193607077112, -.577807184715, .133814667665, -.752071167870, -1.740881674733, 1.744372636661]
+  global p0front_q=[5.0174150466918945, -1.9580995045103968, -2.1519851684570312, -2.172129293481344, -0.4509623686419886, 3.1441547870635986]
+  global p2front_p=p[-.341589734822, -.428861080886, .064214876984, -.753835573880, -1.740792375224, 1.745490611653]
+  global p2front_q=[4.61113977432251, -2.017513414422506, -2.470020294189453, -1.7937475643553675, -0.8565738836871546, 3.1451961994171143]
+  global p2_p=p[-.409750416818, -.501308542746, .054240000000, -.753871741947, -1.740718007275, 1.745536004976]
+  global p2_q=[4.446198299259412, -2.1503980747598197, -2.1851023482858736, -1.9462308929949845, -1.0219990298653485, 3.1462673701353125]
+  global p2up_p=p[-.409748764698, -.501304768720, .255338666955, -.753876804953, -1.740779246622, 1.745464465850]
+  global p2up_q=[4.446454048156738, -1.710123201409811, -2.055655002593994, -2.516717573205465, -1.0224388281451624, 3.1476032733917236]
+  global p0up2right_p=p[-.342944646652, -.554420787334, .283126551607, -.752122713798, -1.740925047032, 1.744302858380]
+  global p0up2right_q=[4.640743732452393, -1.7036706409850062, -1.978522539138794, -2.600733896295065, -0.828414265309469, 3.1458587646484375]
+  global p0up2rotate_p=p[-.267977548257, -.623932013099, .282128447717, .789717557416, -1.313623095133, .463504594940]
+  global p0up2rotate_q=[4.790157318115234, -1.7867800197997035, -1.9222338199615479, -2.4934293232359828, -0.7539122740374964, 1.2621233463287354]
+  while (True):
+    $ 2 "机器人程序"
+    $ 3 "等待: 0.1"
+    sleep(0.1)
+    $ 4 "socket≔socket_open('192.168.0.3',5000)"
+    global socket=socket_open("192.168.0.3",5000)
+    $ 7 "socket_send_string('start program')"
+    socket_send_string("start program")
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 8 "大寰-PGI  移动至  100.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,100.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    $ 9 "MoveL"
+    $ 10 "init_p1frontup" "breakAfter"
+    movel(init_p1frontup_p, a=1.2, v=0.25)
+    $ 11 "MoveL"
+    $ 12 "p1front" "breakAfter"
+    movel(p1front_p, a=1.2, v=0.25)
+    $ 13 "p1" "breakAfter"
+    movel(p1_p, a=1.2, v=0.25)
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 14 "大寰-PGI  移动至  50.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,50.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    $ 15 "MoveL"
+    $ 16 "p1up" "breakAfter"
+    movel(p1up_p, a=1.2, v=0.25)
+    $ 17 "p0up" "breakAfter"
+    movel(p0up_p, a=1.2, v=0.25)
+    $ 18 "p0" "breakAfter"
+    movel(p0_p, a=1.2, v=0.25)
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 19 "大寰-PGI  移动至  100.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,100.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    $ 20 "MoveL"
+    $ 21 "p0front" "breakAfter"
+    movel(p0front_p, a=1.2, v=0.25)
+    $ 22 "p2front" "breakAfter"
+    movel(p2front_p, a=1.2, v=0.25)
+    $ 23 "p2" "breakAfter"
+    movel(p2_p, a=1.2, v=0.25)
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 24 "大寰-PGI  移动至  50.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,50.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    $ 25 "MoveL"
+    $ 26 "p2up" "breakAfter"
+    movel(p2up_p, a=1.2, v=0.25)
+    $ 27 "p0up2right" "breakAfter"
+    movel(p0up2right_p, a=1.2, v=0.25)
+    $ 28 "socket_send_string('start rotate')"
+    socket_send_string("start rotate")
+    $ 29 "等待: 0.5"
+    sleep(0.5)
+    $ 30 "MoveL"
+    $ 31 "p0up2rotate" "breakAfter"
+    movel(p0up2rotate_p, a=0.48, v=0.1)
+    $ 32 "等待: 2.0"
+    sleep(2.0)
+    $ 33 "socket_send_string('end rotate')"
+    socket_send_string("end rotate")
+    $ 34 "MoveL"
+    $ 35 "p0up2right" "breakAfter"
+    movel(p0up2right_p, a=1.2, v=0.25)
+    $ 36 "p1up" "breakAfter"
+    movel(p1up_p, a=1.2, v=0.25)
+    $ 37 "p1" "breakAfter"
+    movel(p1_p, a=1.2, v=0.25)
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 38 "大寰-PGI  移动至  100.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,100.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    $ 39 "MoveL"
+    $ 40 "p1front" "breakAfter"
+    movel(p1front_p, a=1.2, v=0.25)
+    $ 41 "p0front" "breakAfter"
+    movel(p0front_p, a=1.2, v=0.25)
+    $ 42 "p0" "breakAfter"
+    movel(p0_p, a=1.2, v=0.25)
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 43 "大寰-PGI  移动至  50.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,50.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    $ 44 "MoveL"
+    $ 45 "p0up" "breakAfter"
+    movel(p0up_p, a=1.2, v=0.25)
+    $ 46 "p2up" "breakAfter"
+    movel(p2up_p, a=1.2, v=0.25)
+    $ 47 "p2" "breakAfter"
+    movel(p2_p, a=1.2, v=0.25)
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 48 "大寰-PGI  移动至  100.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,100.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    $ 49 "MoveL"
+    $ 50 "p2front" "breakAfter"
+    movel(p2front_p, a=1.2, v=0.25)
+    $ 51 "MoveL"
+    $ 52 "init_p1frontup" "breakAfter"
+    movel(init_p1frontup_p, a=1.2, v=0.25)
+    $ 53 "socket_send_string('end program')"
+    socket_send_string("end program")
+    $ 54 "中止"
+    halt
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 55 "大寰-PGI  移动至  50.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,50.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    # begin: URCap Program Node
+    #   Source: DH-PGI, 2.4.11, DH-Robotics
+    #   Type: 大寰-PGI 移动
+    $ 56 "大寰-PGI  移动至  100.0% 位置(1)"
+  #################################################
+  # Move 
+  #################################################
+  is_connected = dh_pgi_is_connected(1)
+  if (False == is_connected):
+    while (True):
+      popup("移动前，请先连接夹爪","提示", blocking = True)
+    end
+  end
+  dh_pgi_operate = False
+  dh_pgi_operate = dh_pgi_is_activated(1)
+  if (False ==dh_pgi_operate):
+    while (True):
+      popup("移动前，请先激活夹爪","提示", blocking = True)
+    end
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_force(1,20)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_speed(1,100)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  while (True):
+    dh_pgi_operate = dh_pgi_set_position(1,100.0)
+    if (True ==dh_pgi_operate):
+      break
+    end
+    sleep(0.1)
+  end
+  dh_pgi_wait_until_gripped_or_arrived(1)
+  dh_pgi_wait_until_idle(1)
+    # end: URCap Program Node
+    $ 57 "中止"
+    halt
+  end
+end
